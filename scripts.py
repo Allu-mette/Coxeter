@@ -1,16 +1,7 @@
 
-class Coxeter:
-
-    def __init__(self, S, R):
-        self.S = S
-
-        for r in R[:]:
-            R.append(r.slice())
-        self.R = R
-
 class Letter:
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
 
     def __str__(self):
@@ -39,7 +30,7 @@ class Letter:
 
 class Word:
 
-    def __init__(self, w):
+    def __init__(self, w: list[Letter]):
         self.w = w
 
     def __str__(self):
@@ -74,11 +65,11 @@ class Word:
     def __eq__(self, other):
         return self.w == other.w
 
-    # Renvoie la longueur du mot
+        # Renvoie la longueur du mot
     def get_len(self):
         return len(self.w)
 
-    # Regarde si le mot contient W
+        # Regarde si le mot contient W
     def is_in(self, W):
         n = W.get_len()
 
@@ -91,7 +82,7 @@ class Word:
 
         return -1
 
-    # Renvoie le mot où la section, à partir du rang n, est changée par W
+        # Renvoie le mot où la section, à partir du rang n, est changée par W
     def change(self, n: int, W):
         if n + W.get_len()-1 > self.get_len():
             print("La section à changer est trop longue!")
@@ -101,13 +92,23 @@ class Word:
         w0[n:n+W.get_len()] = W.w
         return Word(w0)
 
-    # Renvoie la relation de tresse associée ex: aba -> bab (A utiliser uniquement sur des relations de tresses!)
+        # Renvoie la relation de tresse associée ex: aba -> bab (A utiliser uniquement sur des relations de tresses!)
     def slice(self):
         return Word(self.w[1:2] + self.w[:-1])
 
-# Réduit un mot uniquement à partir des relations aa=1
-def ReflexionReduce(W: Word):
+class Coxeter:
 
+    def __init__(self, S: list[Letter], R: list[Word]):
+        self.S = S
+
+        for r in R[:]:
+            R.append(r.slice())
+        self.R = R
+
+def ReflexionReduce(W: Word)->Word:
+    '''
+    Réduit un mot uniquement à partir des reflexions (aa=1)
+    '''
     w = W.w
     w0 = w[:]
     j = True
@@ -125,13 +126,15 @@ def ReflexionReduce(W: Word):
 
     return Word(w0)
 
-# Renvoie un tableau contenant toutes les formes d'un mot à partir des relations de tresses
-# Graphe de Matsumoto dans le cas d'un mot réduit
-def BraidTrans(G: Coxeter, W: Word):
+def BraidTrans(G: Coxeter, W: Word)->list[Word]:
+    '''
+    Renvoie un tableau contenant toutes les formes d'un mot à partir des relations de tresses
+    Si le mot est réduit alors le résultat sera le graphe de Matsumoto du mot
+    '''
 
     R = G.R
 
-    # Systéme de list open/closed
+        # Systéme de list open/closed
     T1 = []
     T2 = [W]
 
@@ -140,10 +143,10 @@ def BraidTrans(G: Coxeter, W: Word):
         for r in R:
             n = w0.is_in(r)
 
-            # On trouve une relation
+                # On trouve une relation
             if n != -1:
-                # Le mot avec la relation n'a pas encore été testé
-                if w0.change(n, r.slice()) not in T1:
+                    # Le mot avec la relation n'a pas encore été testé
+                if w0.change(n, r.slice()) not in T1 and w0.change(n, r.slice()) not in T2:
                     T2.append(w0.change(n, r.slice()))
 
         T2.remove(w0)
@@ -151,22 +154,26 @@ def BraidTrans(G: Coxeter, W: Word):
 
     return T1
 
-# Renvoie la réduction d'un mot de la forme ws où w est un mot déjà réduit
-def FirstReduce(G: Coxeter, W: Word):
+def FirstReduce(G: Coxeter, W: Word)->Word:
+    '''
+    Renvoie la réduction d'un mot de la forme ws où w est un mot déjà réduit
+    '''
 
-    # Séparation du mot de la forme W = ws
+        # Séparation du mot de la forme W = ws
     U = BraidTrans(G, Word(W.w[:-1]))
     s = W.w[-1]
 
     for u in U:
-        if u.w[-1] == s:
-            return ReflexionReduce(u+s)
+        if u.get_len() != 0:
+            if u.w[-1] == s:
+                return ReflexionReduce(u+s)
 
     return W
 
-# Renvoie le mot réduit
-def Reduce(G: Coxeter, W: Word):
-
+def Reduce(G: Coxeter, W: Word)->Word:
+    '''
+    Renvoie le mot réduit
+    '''
     W = ReflexionReduce(W)
     w0 = Word(W.w[:2])
 
